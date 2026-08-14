@@ -1,16 +1,18 @@
 package com.example.todoapp.components
 
-import androidx.compose.foundation.clickable
+import androidx.compose.animation.animateColorAsState
+import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.MoreVert
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
@@ -21,10 +23,9 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.unit.dp
-import com.example.todoapp.ui.theme.ToDoColorDone
-import com.example.todoapp.ui.theme.ToDoColorUnDone
+import com.example.todoapp.viewmodel.Priority
 import com.example.todoapp.viewmodel.Status
 import com.example.todoapp.viewmodel.ToDoEvent
 import com.example.todoapp.viewmodel.Todo
@@ -32,79 +33,97 @@ import com.example.todoapp.viewmodel.Todo
 @Composable
 fun ToDoView(
     toDo: Todo,
-    onClick: (Todo) -> Unit,
+    onClickToDo: (Todo) -> Unit,
+    onLongClickToDo: (Todo) -> Unit,
     onClickOptions: (ToDoEvent) -> Unit,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
 ) {
-    var expanded by remember { mutableStateOf(false) }
+    // Status Badge
+    val isDone = toDo.status == Status.DONE
+
+    // 2. Declaratively define the color based on state with a smooth animation
+    val cardColor by animateColorAsState(
+        targetValue = if (isDone) {
+            MaterialTheme.colorScheme.surface // Blends into the background
+        } else {
+            MaterialTheme.colorScheme.primaryContainer // Highlights active tasks
+        },
+        label = "Card Color Animation"
+    )
 
     Surface(
-        modifier = modifier,
-        shape = RoundedCornerShape(8.dp),
-        color = MaterialTheme.colorScheme.primaryContainer,
-        onClick = { onClick(toDo) }
+        modifier = modifier
+            .fillMaxWidth()
+            .clip(MaterialTheme.shapes.medium)
+            .combinedClickable(
+                onClick = { onClickToDo(toDo) },
+                onLongClick = { onLongClickToDo(toDo) }
+            ),
+        shape = MaterialTheme.shapes.medium,
+        color = cardColor,
     ) {
         Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(start = 20.dp, end = 8.dp, top = 16.dp, bottom = 16.dp),
-            verticalAlignment = Alignment.CenterVertically
+            modifier = Modifier.padding(vertical = 12.dp, horizontal = 16.dp),
+            verticalAlignment = Alignment.CenterVertically,
         ) {
-
-            Text(
-                text = toDo.name,
-                style = MaterialTheme.typography.titleMedium,
-                modifier = Modifier.weight(1f)
-            )
-
-            if (toDo.status == Status.DONE) {
-                Surface(
-                    shape = RoundedCornerShape(4.dp),
-                    color = ToDoColorDone
-                ) {
-                    Text(text = "DONE", Modifier.padding(4.dp))
+            // 1. Wrap Title and Priority in a Column
+            Column(modifier = Modifier.weight(1f)) {
+                Text(
+                    text = toDo.name,
+                    style = MaterialTheme.typography.titleMedium,
+                )
+                // Priority Indicator
+                val priorityColor = when (toDo.priority) {
+                    Priority.HIGH -> MaterialTheme.colorScheme.error
+                    Priority.MEDIUM -> MaterialTheme.colorScheme.tertiary
+                    Priority.LOW -> MaterialTheme.colorScheme.primary
                 }
-            } else {
-                Surface(
-                    shape = RoundedCornerShape(4.dp),
-                    color = ToDoColorUnDone
-                ) {
-                    Text(text = "UNDONE", Modifier.padding(4.dp))
-                }
+
+                Text(
+                    text = toDo.priority.name,
+                    style = MaterialTheme.typography.labelSmall,
+                    color = priorityColor,
+                    modifier = Modifier.padding(top = 2.dp)
+                )
             }
 
-            Box {
-                Icon(
-                    imageVector = Icons.Default.MoreVert,
-                    contentDescription = "More",
-                    modifier = Modifier
-                        .clickable { expanded = true }
-                        .padding(8.dp)
+            val doneStatusColor = MaterialTheme.colorScheme.primaryContainer
+            val undoneStatusColor = MaterialTheme.colorScheme.errorContainer
+            Surface(
+                shape = MaterialTheme.shapes.extraSmall,
+                color = if (isDone) doneStatusColor else undoneStatusColor,
+                modifier = Modifier.padding(end = 4.dp)
+            ) {
+                Text(
+                    text = toDo.status.name,
+                    style = MaterialTheme.typography.labelSmall,
+                    modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp)
                 )
+            }
+
+            var expanded by remember { mutableStateOf(false) }
+
+            // 3. Options Menu
+            Box {
+                IconButton(onClick = { expanded = true }) {
+                    Icon(
+                        imageVector = Icons.Default.MoreVert,
+                        contentDescription = "Task Options"
+                    )
+                }
 
                 DropdownMenu(
                     expanded = expanded,
-                    onDismissRequest = { expanded = false }
+                    onDismissRequest = { expanded = false },
                 ) {
-
-                    if (toDo.status == Status.UNDONE) {
-                        DropdownMenuItem(
-                            text = { Text("Mark as Done") },
-                            onClick = {
-                                onClickOptions(ToDoEvent.MarkAsDone(toDo.copy(status = Status.DONE)))
-                                expanded = false
-                            }
-                        )
-                    } else {
-                        DropdownMenuItem(
-                            text = { Text("Mark as UnDone") },
-                            onClick = {
-                                onClickOptions(ToDoEvent.MarkAsDone(toDo.copy(status = Status.UNDONE)))
-                                expanded = false
-                            }
-                        )
-                    }
-
+                    DropdownMenuItem(
+                        text = { Text(if (isDone) "Mark as UnDone" else "Mark as Done") },
+                        onClick = {
+                            val newStatus = if (isDone) Status.UNDONE else Status.DONE
+                            onClickOptions(ToDoEvent.MarkAsDone(toDo.copy(status = newStatus)))
+                            expanded = false
+                        }
+                    )
                     DropdownMenuItem(
                         text = { Text("Edit") },
                         onClick = {
@@ -112,7 +131,6 @@ fun ToDoView(
                             expanded = false
                         }
                     )
-
                     DropdownMenuItem(
                         text = { Text("Delete") },
                         onClick = {

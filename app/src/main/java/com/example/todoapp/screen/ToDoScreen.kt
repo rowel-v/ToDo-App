@@ -11,6 +11,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import com.example.todoapp.components.AddToDoDialog
 import com.example.todoapp.components.DeleteToDoDialog
+import com.example.todoapp.components.EditToDoDialog
 import com.example.todoapp.components.ToDoListView
 import com.example.todoapp.components.TodoInfo
 import com.example.todoapp.viewmodel.ToDoEvent
@@ -26,9 +27,9 @@ fun ToDoScreen(
     onCloseAddToDoButton: () -> Unit,
 ) {
 
+    var showToDoInfo by remember { mutableStateOf<Todo?>(null) }
     var toDoToDelete by remember { mutableStateOf<Todo?>(null) }
     var toDoToUpdate by remember { mutableStateOf<Todo?>(null) }
-    var showToDoInfo by remember { mutableStateOf<Todo?>(null) }
 
     Box(
         modifier = modifier
@@ -36,6 +37,7 @@ fun ToDoScreen(
         ToDoListView(
             toDos = toDoUiState.toDo,
             onClickToDo = { showToDoInfo = it },
+            onLongClickToDo = { showToDoInfo = it },
             onClickToDoOptions = { event ->
                 when (event) {
                     is ToDoEvent.MarkAsDone -> onEvent(event)
@@ -48,8 +50,7 @@ fun ToDoScreen(
         )
         if (addToDoButtonClicked) {
             AddToDoDialog(
-                onClick = { value ->
-                    val newToDo = Todo(name = value)
+                onClick = { newToDo ->
                     onEvent(ToDoEvent.AddToDo(newToDo))
                 },
                 onClose = { onCloseAddToDoButton() },
@@ -57,6 +58,13 @@ fun ToDoScreen(
             )
         }
 
+        showToDoInfo?.let {
+            TodoInfo(
+                todo = it,
+                onCloseClicked = { showToDoInfo = null },
+                modifier = Modifier.size(width = 320.dp, height = 200.dp)
+            )
+        }
         toDoToDelete?.let { toDo ->
             DeleteToDoDialog(
                 label = "Confirm ${toDo.name} to Delete? ",
@@ -67,18 +75,16 @@ fun ToDoScreen(
                 onCancel = { toDoToDelete = null },
             )
         }
-
         toDoToUpdate?.let { toDo ->
-
+            EditToDoDialog(
+                editToDo = toDo,
+                onClick = { value ->
+                    val editedToDo = toDo.copy(name = value)
+                    onEvent(ToDoEvent.UpdateToDo(editedToDo))
+                },
+                onCancel = { toDoToUpdate = null },
+                modifier = Modifier
+            )
         }
-
-    }
-
-    showToDoInfo?.let {
-        TodoInfo(
-            todo = it,
-            onCloseClicked = { showToDoInfo = null },
-            modifier = Modifier.size(width = 320.dp, height = 200.dp)
-        )
     }
 }

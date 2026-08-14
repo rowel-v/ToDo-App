@@ -21,7 +21,6 @@ class ToDoViewModel : ViewModel() {
                     )
                 }
             }
-
             is ToDoEvent.DeleteToDo -> {
                 _toDoUiState.update { currentToDos ->
                     currentToDos.copy(
@@ -29,7 +28,6 @@ class ToDoViewModel : ViewModel() {
                     )
                 }
             }
-
             is ToDoEvent.UpdateToDo -> {
                 val updateToDoReq = event.toDo
                 _toDoUiState.update {
