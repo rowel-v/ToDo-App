@@ -24,30 +24,27 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
 import com.example.todoapp.viewmodel.Priority
 import com.example.todoapp.viewmodel.Status
 import com.example.todoapp.viewmodel.ToDoEvent
 import com.example.todoapp.viewmodel.Todo
+import com.example.todoapp.viewmodel.toReadableFormat
+import java.time.LocalDateTime
 
 @Composable
 fun ToDoView(
     toDo: Todo,
     onClickToDo: (Todo) -> Unit,
-    onLongClickToDo: (Todo) -> Unit,
     onClickOptions: (ToDoEvent) -> Unit,
     modifier: Modifier = Modifier,
 ) {
-    // Status Badge
     val isDone = toDo.status == Status.DONE
+    var expanded by remember { mutableStateOf(false) }
 
-    // 2. Declaratively define the color based on state with a smooth animation
     val cardColor by animateColorAsState(
-        targetValue = if (isDone) {
-            MaterialTheme.colorScheme.surface // Blends into the background
-        } else {
-            MaterialTheme.colorScheme.primaryContainer // Highlights active tasks
-        },
+        targetValue = if (isDone) Color(0xFFDFF3E1) else MaterialTheme.colorScheme.primaryContainer,
         label = "Card Color Animation"
     )
 
@@ -57,7 +54,7 @@ fun ToDoView(
             .clip(MaterialTheme.shapes.medium)
             .combinedClickable(
                 onClick = { onClickToDo(toDo) },
-                onLongClick = { onLongClickToDo(toDo) }
+                onLongClick = { expanded = true }
             ),
         shape = MaterialTheme.shapes.medium,
         color = cardColor,
@@ -66,33 +63,42 @@ fun ToDoView(
             modifier = Modifier.padding(vertical = 12.dp, horizontal = 16.dp),
             verticalAlignment = Alignment.CenterVertically,
         ) {
-            // 1. Wrap Title and Priority in a Column
             Column(modifier = Modifier.weight(1f)) {
                 Text(
                     text = toDo.name,
                     style = MaterialTheme.typography.titleMedium,
                 )
-                // Priority Indicator
+
                 val priorityColor = when (toDo.priority) {
                     Priority.HIGH -> MaterialTheme.colorScheme.error
                     Priority.MEDIUM -> MaterialTheme.colorScheme.tertiary
                     Priority.LOW -> MaterialTheme.colorScheme.primary
                 }
 
-                Text(
-                    text = toDo.priority.name,
-                    style = MaterialTheme.typography.labelSmall,
-                    color = priorityColor,
-                    modifier = Modifier.padding(top = 2.dp)
-                )
+                // display priority level only when not finished
+                if (toDo.dateFinished == null) {
+                    Text(
+                        text = toDo.priority.name,
+                        style = MaterialTheme.typography.labelSmall,
+                        color = priorityColor,
+                        modifier = Modifier.padding(top = 2.dp)
+                    )
+                }
+
+                // NEW: Show Date Finished if available
+                toDo.dateFinished?.let { finishedAt ->
+                    Text(
+                        text = "Finished: ${finishedAt.toReadableFormat()}",
+                        style = MaterialTheme.typography.labelSmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        modifier = Modifier.padding(top = 2.dp)
+                    )
+                }
             }
 
-            val doneStatusColor = MaterialTheme.colorScheme.primaryContainer
-            val undoneStatusColor = MaterialTheme.colorScheme.errorContainer
             Surface(
                 shape = MaterialTheme.shapes.extraSmall,
-                color = if (isDone) doneStatusColor else undoneStatusColor,
-                modifier = Modifier.padding(end = 4.dp)
+                color = if (isDone) MaterialTheme.colorScheme.primaryContainer else MaterialTheme.colorScheme.errorContainer
             ) {
                 Text(
                     text = toDo.status.name,
@@ -101,26 +107,24 @@ fun ToDoView(
                 )
             }
 
-            var expanded by remember { mutableStateOf(false) }
-
-            // 3. Options Menu
             Box {
                 IconButton(onClick = { expanded = true }) {
-                    Icon(
-                        imageVector = Icons.Default.MoreVert,
-                        contentDescription = "Task Options"
-                    )
+                    Icon(imageVector = Icons.Default.MoreVert, contentDescription = "Task Options")
                 }
 
-                DropdownMenu(
-                    expanded = expanded,
-                    onDismissRequest = { expanded = false },
-                ) {
+                DropdownMenu(expanded = expanded, onDismissRequest = { expanded = false }) {
                     DropdownMenuItem(
                         text = { Text(if (isDone) "Mark as UnDone" else "Mark as Done") },
                         onClick = {
+                            // NEW: Calculate both status and the timestamp
                             val newStatus = if (isDone) Status.UNDONE else Status.DONE
-                            onClickOptions(ToDoEvent.MarkAsDone(toDo.copy(status = newStatus)))
+                            val newDateFinished = if (!isDone) LocalDateTime.now() else null
+
+                            onClickOptions(
+                                ToDoEvent.MarkAsDone(
+                                    toDo.copy(status = newStatus, dateFinished = newDateFinished)
+                                )
+                            )
                             expanded = false
                         }
                     )

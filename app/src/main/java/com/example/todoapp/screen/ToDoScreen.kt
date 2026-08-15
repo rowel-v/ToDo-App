@@ -1,7 +1,17 @@
 package com.example.todoapp.screen
 
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Add
+import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.ExtendedFloatingActionButton
+import androidx.compose.material3.Icon
+import androidx.compose.material3.Scaffold
+import androidx.compose.material3.Text
+import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -12,79 +22,106 @@ import androidx.compose.ui.unit.dp
 import com.example.todoapp.components.AddToDoDialog
 import com.example.todoapp.components.DeleteToDoDialog
 import com.example.todoapp.components.EditToDoDialog
+import com.example.todoapp.components.ToDoButton
 import com.example.todoapp.components.ToDoListView
 import com.example.todoapp.components.TodoInfo
 import com.example.todoapp.viewmodel.ToDoEvent
 import com.example.todoapp.viewmodel.ToDoUiState
 import com.example.todoapp.viewmodel.Todo
 
+sealed interface DialogState {
+    data object None : DialogState
+    data object Add : DialogState
+    data class Info(val todo: Todo) : DialogState
+    data class Delete(val todo: Todo) : DialogState
+    data class Edit(val todo: Todo) : DialogState
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun ToDoScreen(
     modifier: Modifier = Modifier,
     toDoUiState: ToDoUiState,
     onEvent: (ToDoEvent) -> Unit,
-    addToDoButtonClicked: Boolean = false,
-    onCloseAddToDoButton: () -> Unit,
 ) {
 
-    var showToDoInfo by remember { mutableStateOf<Todo?>(null) }
-    var toDoToDelete by remember { mutableStateOf<Todo?>(null) }
-    var toDoToUpdate by remember { mutableStateOf<Todo?>(null) }
+    var activeDialog by remember { mutableStateOf<DialogState>(DialogState.None) }
 
-    Box(
-        modifier = modifier
-    ) {
-        ToDoListView(
-            toDos = toDoUiState.toDo,
-            onClickToDo = { showToDoInfo = it },
-            onLongClickToDo = { showToDoInfo = it },
-            onClickToDoOptions = { event ->
-                when (event) {
-                    is ToDoEvent.MarkAsDone -> onEvent(event)
-                    is ToDoEvent.Edit -> toDoToUpdate = event.todo
-                    is ToDoEvent.DeleteToDo -> toDoToDelete = event.toDo
-                    else -> {}
-                }
-            },
-            modifier = modifier
-        )
-        if (addToDoButtonClicked) {
-            AddToDoDialog(
-                onClick = { newToDo ->
-                    onEvent(ToDoEvent.AddToDo(newToDo))
-                },
-                onClose = { onCloseAddToDoButton() },
-                modifier = Modifier
+    Scaffold(
+        modifier = modifier,
+        topBar = {
+            TopAppBar(
+                title = { Text("To Do App") }
+            )
+        },
+        floatingActionButton = {
+            ExtendedFloatingActionButton(
+                onClick = { activeDialog = DialogState.Add },
+                icon = { Icon(Icons.Filled.Add, contentDescription = "Add Icon") },
+                text = { Text("Add To Do") }
             )
         }
+    ) { innerPadding ->
 
-        showToDoInfo?.let {
-            TodoInfo(
-                todo = it,
-                onCloseClicked = { showToDoInfo = null },
-                modifier = Modifier.size(width = 320.dp, height = 200.dp)
-            )
-        }
-        toDoToDelete?.let { toDo ->
-            DeleteToDoDialog(
-                label = "Confirm ${toDo.name} to Delete? ",
-                onConfirm = {
-                    onEvent(ToDoEvent.DeleteToDo(toDo))
-                    toDoToDelete = null
+        Box(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(innerPadding)
+        ) {
+            ToDoListView(
+                toDos = toDoUiState.toDo,
+                onClickToDo = { activeDialog = DialogState.Info(it) },
+                onClickToDoOptions = { event ->
+                    when (event) {
+                        is ToDoEvent.MarkAsDone -> onEvent(event)
+                        is ToDoEvent.Edit -> activeDialog = DialogState.Edit(event.todo)
+                        is ToDoEvent.DeleteToDo -> activeDialog = DialogState.Delete(event.toDo)
+                        else -> {}
+                    }
                 },
-                onCancel = { toDoToDelete = null },
+                modifier = Modifier.fillMaxSize()
             )
-        }
-        toDoToUpdate?.let { toDo ->
-            EditToDoDialog(
-                editToDo = toDo,
-                onClick = { value ->
-                    val editedToDo = toDo.copy(name = value)
-                    onEvent(ToDoEvent.UpdateToDo(editedToDo))
-                },
-                onCancel = { toDoToUpdate = null },
-                modifier = Modifier
-            )
+
+            when (val state = activeDialog) {
+                is DialogState.None -> Unit
+                is DialogState.Add ->
+                    AddToDoDialog(
+                        onClick = { newToDo ->
+                            onEvent(ToDoEvent.AddToDo(newToDo))
+                            activeDialog = DialogState.None
+                        },
+                        onClose = { activeDialog = DialogState.None },
+                        modifier = Modifier
+                    )
+
+                is DialogState.Info ->
+                    TodoInfo(
+                        todo = state.todo,
+                        onCloseClicked = { activeDialog = DialogState.None },
+                        modifier = Modifier.size(width = 320.dp, height = 200.dp)
+                    )
+
+                is DialogState.Delete ->
+                    DeleteToDoDialog(
+                        label = "Confirm ${state.todo.name} to Delete? ",
+                        onConfirm = {
+                            onEvent(ToDoEvent.DeleteToDo(state.todo))
+                            activeDialog = DialogState.None
+                        },
+                        onCancel = { activeDialog = DialogState.None },
+                    )
+
+                is DialogState.Edit ->
+                    EditToDoDialog(
+                        editToDo = state.todo,
+                        onClick = { value ->
+                            onEvent(ToDoEvent.UpdateToDo(state.todo.copy(name = value)))
+                            activeDialog = DialogState.None
+                        },
+                        onCancel = { activeDialog = DialogState.None },
+                        modifier = Modifier
+                    )
+            }
         }
     }
 }

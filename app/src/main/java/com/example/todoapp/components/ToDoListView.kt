@@ -15,7 +15,6 @@ import com.example.todoapp.viewmodel.Todo
 fun ToDoListView(
     toDos: List<Todo>,
     onClickToDo: (Todo) -> Unit,
-    onLongClickToDo: (Todo) -> Unit,
     onClickToDoOptions: (ToDoEvent) -> Unit,
     modifier: Modifier = Modifier,
     contentPadding: PaddingValues = PaddingValues(16.dp)
@@ -32,7 +31,6 @@ fun ToDoListView(
             ToDoView(
                 toDo = currentToDo,
                 onClickToDo = onClickToDo, // 3. Idiomatic lambda passing
-                onLongClickToDo = onLongClickToDo,
                 onClickOptions = onClickToDoOptions,
                 modifier = Modifier.fillMaxWidth()
             )

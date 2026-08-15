@@ -10,6 +10,7 @@ data class Todo(
     val priority: Priority,
     val status: Status = Status.UNDONE,
     val dateCreated: LocalDateTime = LocalDateTime.now(),
+    val dateFinished: LocalDateTime? = null
 )
 
 enum class Status { DONE, UNDONE }
