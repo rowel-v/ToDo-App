@@ -1,4 +1,4 @@
-package com.example.todoapp.components
+package com.example.todoapp.presentation.ui.components
 
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
@@ -9,6 +9,7 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Dialog
@@ -113,7 +114,7 @@ fun TodoInfo(
 // --- Reusable Micro-Components for cleaner code ---
 
 @Composable
-private fun DateRow(label: String, value: String, valueColor: androidx.compose.ui.graphics.Color = MaterialTheme.colorScheme.onSurfaceVariant) {
+private fun DateRow(label: String, value: String, valueColor: Color = MaterialTheme.colorScheme.onSurfaceVariant) {
     Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
         Text(text = label, style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.outline)
         Text(text = value, style = MaterialTheme.typography.bodyMedium, color = valueColor, fontWeight = FontWeight.SemiBold)
@@ -121,7 +122,7 @@ private fun DateRow(label: String, value: String, valueColor: androidx.compose.u
 }
 
 @Composable
-private fun InfoChip(text: String, containerColor: androidx.compose.ui.graphics.Color, contentColor: androidx.compose.ui.graphics.Color) {
+private fun InfoChip(text: String, containerColor: Color, contentColor: Color) {
     Surface(
         shape = MaterialTheme.shapes.small,
         color = containerColor,

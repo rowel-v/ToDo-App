@@ -1,4 +1,4 @@
-package com.example.todoapp.screen
+package com.example.todoapp.presentation.ui.screen
 
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
@@ -19,12 +19,11 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
-import com.example.todoapp.components.AddToDoDialog
-import com.example.todoapp.components.DeleteToDoDialog
-import com.example.todoapp.components.EditToDoDialog
-import com.example.todoapp.components.ToDoButton
-import com.example.todoapp.components.ToDoListView
-import com.example.todoapp.components.TodoInfo
+import com.example.todoapp.presentation.ui.components.AddToDoDialog
+import com.example.todoapp.presentation.ui.components.DeleteToDoDialog
+import com.example.todoapp.presentation.ui.components.EditToDoDialog
+import com.example.todoapp.presentation.ui.components.ToDoListView
+import com.example.todoapp.presentation.ui.components.TodoInfo
 import com.example.todoapp.viewmodel.ToDoEvent
 import com.example.todoapp.viewmodel.ToDoUiState
 import com.example.todoapp.viewmodel.Todo

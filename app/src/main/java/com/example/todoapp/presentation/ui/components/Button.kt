@@ -1,4 +1,4 @@
-package com.example.todoapp.components
+package com.example.todoapp.presentation.ui.components
 
 import androidx.compose.material3.Button
 import androidx.compose.material3.Text
